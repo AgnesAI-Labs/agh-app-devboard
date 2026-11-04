@@ -104,7 +104,7 @@ export const html = String.raw`
 <div class="layout">
   <section class="card chat">
     <div class="card-head"><h2>对话与动作 <span class="count" id="n-feed">0</span></h2><span class="chip" id="status">待开始</span></div>
-    <div class="feed" id="feed" role="log"></div>
+    <div class="feed" id="feed" role="log" tabindex="0"></div>
   </section>
   <aside class="side">
     <section class="card"><div class="card-head"><h2>全程摘要</h2></div><div class="facts" id="facts"></div></section>
@@ -143,7 +143,10 @@ export function run(root) {
   const feed = $('feed')
   let T = 0
   let idx = 0
-  let speed = 120
+  let speed = 60
+  let follow = true
+  let userAt = 0
+  let held = false
   let playing = false
   let timer = 0
   let state = fresh()
@@ -410,7 +413,10 @@ export function run(root) {
       apply(ev[idx++])
       moved = true
     }
-    if (moved) feed.scrollTop = feed.scrollHeight
+    if (moved && follow) {
+      const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches
+      feed.scrollTo({ top: feed.scrollHeight, behavior: reduce ? 'auto' : 'smooth' })
+    }
     renderPanels()
   }
 
@@ -420,6 +426,7 @@ export function run(root) {
       feed.replaceChildren()
       state = fresh()
       idx = 0
+      follow = true
     }
     T = target
     advance(T)
@@ -439,6 +446,26 @@ export function run(root) {
     renderPanels()
   }
 
+  // Follow the newest line until the user scrolls away; only user-initiated scrolls flip `follow`, so the playback's own
+  // smooth scrolling never does. Scrolling back near the bottom resumes following.
+  const touched = () => {
+    userAt = Date.now()
+  }
+  feed.addEventListener('wheel', touched, { passive: true })
+  feed.addEventListener('touchmove', touched, { passive: true })
+  feed.addEventListener('pointerdown', () => {
+    held = true
+  })
+  const release = () => {
+    held = false
+    touched()
+  }
+  window.addEventListener('pointerup', release)
+  feed.addEventListener('keydown', touched)
+  feed.addEventListener('scroll', () => {
+    if (!held && Date.now() - userAt > 400) return
+    follow = feed.scrollHeight - feed.scrollTop - feed.clientHeight < 48
+  })
   const sp = $('speed')
   for (const v of SPEEDS) {
     const b = el('button', '', `×${v}`)
@@ -480,5 +507,6 @@ export function run(root) {
   root.host.__assistantDemo = { seek, play: () => setPlaying(true), pause: () => setPlaying(false), state: () => ({ T, idx, playing, turn: state.turn, tools: state.tools, stages: state.stages }) }
   return () => {
     clearInterval(timer)
+    window.removeEventListener('pointerup', release)
   }
 }
