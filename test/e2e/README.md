@@ -33,6 +33,6 @@ Step o plays 「宁川的一天」 on the group after step n: the signal desk sh
 
 ## Assistant demo journey
 
-`assistant-demo-journey.mjs` drives 「小川演示」, the replay of one real 小川 run (data from `scripts/assistant-demo-export.mjs`, page in `client/demo/assistant-run-demo.js`). No model call is made; the fixture account only lets the first run and the adoption through. It checks the sidebar order (小川 → 小川演示 → 值守中心 → 值守中心 演示), play and pause (the clock stops), scrolling up during playback (the view stays put while lines keep arriving; scrolling back to the bottom resumes following), scrubbing to the end (six stages 已通过, more than 13 turns) and back, and a dark screenshot. Run it like the assistant journey with `assistant-demo-journey.mjs` as the file.
+`assistant-demo-journey.mjs` drives 「小川演示」, the replay of one real 小川 run (data from `scripts/assistant-demo-export.mjs`, page in `client/demo/assistant-run-demo.js`). No model call is made; the fixture account only lets the first run and the adoption through. It checks the sidebar order (小川 → 小川演示 → 值守中心 → 值守中心 演示), play and pause (the clock stops), scrolling up during playback (the view stays put while lines keep arriving; scrolling back to the bottom or the 回到最新 button resumes following), scrubbing to the end (six stages 已通过, more than 13 turns) and back, and a dark screenshot. Run it like the assistant journey with `assistant-demo-journey.mjs` as the file.
 
 Regenerate the data from a later run: `node scripts/assistant-demo-export.mjs <events.json> client/demo/assistant-run.js` (input: JSON array of ledger rows).

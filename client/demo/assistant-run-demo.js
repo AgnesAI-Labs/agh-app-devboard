@@ -29,6 +29,8 @@ header.top{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1
 .controls{display:flex;flex-wrap:wrap;align-items:center;gap:8px;width:100%}
 .btn{height:32px;padding:0 12px;border-radius:8px;border:1px solid var(--line);background:var(--surface);font-size:13px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
 .btn:hover{border-color:var(--text3)}
+.to-latest{position:absolute;right:18px;bottom:16px;z-index:2;box-shadow:0 2px 10px rgba(0,0,0,.14)}
+.to-latest[hidden]{display:none}
 .btn-primary{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:600;min-width:76px;justify-content:center}
 :host([data-dark]) .btn-primary{color:#14152a}
 .btn-primary:hover{filter:brightness(1.08);border-color:var(--brand)}
@@ -55,7 +57,7 @@ header.top{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1
 .stage[data-state=IN_REVIEW] .stage-bar i{width:75%;background:var(--warn)}
 .stage[data-state=IN_PROGRESS] .stage-bar i{width:40%}
 .layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,380px);gap:16px;padding:16px 24px 40px;align-items:start}
-.chat{display:flex;flex-direction:column;height:calc(100vh - 250px);min-height:460px}
+.chat{position:relative;display:flex;flex-direction:column;height:calc(100vh - 250px);min-height:460px}
 .feed{overflow:auto;flex:1;min-height:0;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
 .empty{padding:28px 16px;color:var(--text3);font-size:13px;text-align:center}
 .turn{display:flex;align-items:center;gap:10px;color:var(--text3);font-size:12px;margin-top:6px}
@@ -105,6 +107,7 @@ export const html = String.raw`
   <section class="card chat">
     <div class="card-head"><h2>对话与动作 <span class="count" id="n-feed">0</span></h2><span class="chip" id="status">待开始</span></div>
     <div class="feed" id="feed" role="log" tabindex="0"></div>
+    <button class="btn to-latest" id="to-latest" type="button" hidden>回到最新 ↓</button>
   </section>
   <aside class="side">
     <section class="card"><div class="card-head"><h2>全程摘要</h2></div><div class="facts" id="facts"></div></section>
@@ -406,6 +409,11 @@ export function run(root) {
     $('play').textContent = playing ? '暂停' : T >= TOTAL ? '重播' : '播放'
   }
 
+  function setFollow(on) {
+    follow = on
+    $('to-latest').hidden = on
+  }
+
   function advance(to) {
     const ev = data.events
     let moved = false
@@ -426,7 +434,7 @@ export function run(root) {
       feed.replaceChildren()
       state = fresh()
       idx = 0
-      follow = true
+      setFollow(true)
     }
     T = target
     advance(T)
@@ -464,7 +472,12 @@ export function run(root) {
   feed.addEventListener('keydown', touched)
   feed.addEventListener('scroll', () => {
     if (!held && Date.now() - userAt > 400) return
-    follow = feed.scrollHeight - feed.scrollTop - feed.clientHeight < 48
+    setFollow(feed.scrollHeight - feed.scrollTop - feed.clientHeight < 48)
+  })
+  const latest = $('to-latest')
+  latest.addEventListener('click', () => {
+    setFollow(true)
+    feed.scrollTo({ top: feed.scrollHeight, behavior: 'smooth' })
   })
   const sp = $('speed')
   for (const v of SPEEDS) {

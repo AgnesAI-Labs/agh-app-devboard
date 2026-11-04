@@ -1,7 +1,8 @@
 // Verify-skill journey: the 「小川演示」 replay page on the real workbench. No model is called (the page replays an exported
 // snapshot); the fixture account only lets the first run and the adoption go through.
 // Checks: sidebar order 小川 → 小川演示 → 值守中心 → 值守中心 演示, the page renders, plays, can be scrubbed and paused,
-// scrolling up during playback holds the view while lines keep arriving (back at the bottom it follows again),
+// scrolling up during playback holds the view while lines keep arriving and shows 回到最新 (scrolling back or the
+// button resumes following),
 // the stage strip reaches 已通过 for all six stages; light and dark screenshots.
 // Run: see test/e2e/README.md
 import { addFixtureAccount, firstRun, installAndAdopt, startFixture } from './lib.mjs'
@@ -57,10 +58,21 @@ export default async function assistantDemoJourney(c) {
     await page.waitForTimeout(1500)
     expect((await view()).top).toBeLessThan(5) // the playback did not pull the view back down
     expect(await lines()).toBeGreaterThan(n0) // while new lines kept arriving
+    const latest = host.getByRole('button', { name: /回到最新/ })
+    await expect(latest).toBeVisible()
+    await shot('b2-held-light')
     await page.mouse.wheel(0, 100_000)
     await expect.poll(async () => (await view()).gap, { timeout: 5000 }).toBeLessThan(48)
     await page.waitForTimeout(1500)
     expect((await view()).gap).toBeLessThan(48) // following again
+    await expect(latest).toBeHidden()
+    await feed.hover()
+    await page.mouse.wheel(0, -100_000)
+    await latest.click() // the button jumps back and resumes following
+    await expect.poll(async () => (await view()).gap, { timeout: 5000 }).toBeLessThan(48)
+    await page.waitForTimeout(1500)
+    expect((await view()).gap).toBeLessThan(48)
+    await expect(latest).toBeHidden()
     await host.getByRole('button', { name: '暂停', exact: true }).click()
     note(`b2: lines ${n0} -> ${await lines()} with the view held at the top`)
 
